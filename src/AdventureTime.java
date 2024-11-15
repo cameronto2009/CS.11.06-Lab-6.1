@@ -1,108 +1,147 @@
 import java.io.*;
-import java.util.Scanner;
+import java.util.*;
 
 public class AdventureTime {
 
-    /** This is the main method and it is where you will test your implementations for challengeOne, challengeTwo, etc.
-     *
-     * @param args
-     * @throws IOException
-     */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
+        // Test each challenge and store the results
+        int challengeOneAnswer = challengeOne("inputOneTwo.txt");
+        int challengeTwoAnswer = challengeTwo("inputOneTwo.txt");
+        int challengeThreeAnswer = challengeThree("inputThreeFour.txt");
+        int challengeFourAnswer = challengeFour("inputThreeFour.txt");
 
-
+        // Write all answers to a file
+        writeAnswersToFile("AdventureTime.txt", challengeOneAnswer, challengeTwoAnswer, challengeThreeAnswer, challengeFourAnswer);
     }
 
-    /** TODO 1
-     *
-     * Challenge 1
-     *
-     * @param fileName
-     * @return Answer to Challenge 1
-     * @throws IOException
-     */
-    public static int challengeOne(String fileName) throws IOException {
-        return 0;
+    public static int challengeOne(String fileName) {
+        List<Integer> depths = readFile(fileName);
+        return countIncreases(depths);
     }
 
-    /** TODO 2
-     *
-     * Challenge 2
-     *
-     * @param fileName
-     * @return Answer to Challenge 2
-     * @throws FileNotFoundException
-     */
-    public static int challengeTwo(String fileName) throws FileNotFoundException {
-        return 0;
+    public static int challengeTwo(String fileName) {
+        List<Integer> depths = readFile(fileName);
+        return countSlidingWindowIncreases(depths, 3);
     }
 
-    /** TODO 3
-     *
-     * Challenge 3
-     *
-     * @param fileName
-     * @return Answer to Challenge 3
-     * @throws FileNotFoundException
-     */
-    public static int challengeThree(String fileName) throws FileNotFoundException {
-        return 0;
+    public static int challengeThree(String fileName) {
+        return calculatePosition(fileName, false);
     }
 
-    /** TODO 4
-     *
-     * Challenge 4
-     *
-     * @param filename
-     * @return Answer to Challenge 4
-     * @throws FileNotFoundException
-     */
-    public static int challengeFour(String filename) throws FileNotFoundException {
-        return 0;
+    public static int challengeFour(String fileName) {
+        return calculatePosition(fileName, true);
     }
 
-    /** This method will write the values passed as challengeOne, challengeTwo, challengeThree, and challengeFour to a text file.
-     * Do not edit this method.
-     */
-    private static void writeFileAllAnswers(String outPutFilename, int challengeOne, int challengeTwo, int challengeThree, int challengeFour) throws IOException {
-        File file = new File(outPutFilename);
-        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
-        bufferedWriter.write("Challenge 1: " + "\t" + challengeOne + "\n");
-        bufferedWriter.write("Challenge 2: " + "\t" + challengeTwo + "\n");
-        bufferedWriter.write("Challenge 3: " + "\t" + challengeThree + "\n");
-        bufferedWriter.write("Challenge 4: " + "\t" + challengeFour + "\n");
-        bufferedWriter.close();
-    }
+    private static int calculatePosition(String fileName, boolean useAim) {
+        int horizontalPosition = 0;
+        int depth = 0;
+        int aim = 0;
 
-    /** This method will read the values in inputFilename into an array of integers, which it will return.
-     * Do not edit this method.
-     */
-    private static int[] readFile(String inputFilename) throws FileNotFoundException {
-        File file = new File(inputFilename);
-        Scanner scanner = new Scanner(file);
-        int numberOfLinesInFile = countLinesInFile(inputFilename);
-        int[] data = new int[numberOfLinesInFile];
-        int index = 0;
-        while (scanner.hasNextLine()) {
-            data[index++] = scanner.nextInt();
+        for (String line : readLines(fileName)) {
+            String[] parts = line.split(" ");
+            String direction = parts[0];
+            int value = Integer.parseInt(parts[1]);
+
+            if (direction.equals("forward")) {
+                horizontalPosition += value;
+                if (useAim) {
+                    depth += aim * value;
+                }
+            } else if (direction.equals("down")) {
+                if (useAim) {
+                    aim += value;
+                } else {
+                    depth += value;
+                }
+            } else if (direction.equals("up")) {
+                if (useAim) {
+                    aim -= value;
+                } else {
+                    depth -= value;
+                }
+            }
         }
-        scanner.close();
-        return data;
+
+        return horizontalPosition * depth;
     }
 
-    /** This method will count the number of lines in a text file, which it will return.
-     * Do not edit this method.
-     */
-    private static int countLinesInFile(String inputFilename) throws FileNotFoundException {
-        File file = new File(inputFilename);
-        Scanner scanner = new Scanner(file);
-        int lineCount = 0;
-        while (scanner.hasNextLine()) {
-            lineCount++;
-            scanner.nextLine();
+    private static List<Integer> readFile(String fileName) {
+        List<Integer> values = new ArrayList<>();
+        for (String line : readLines(fileName)) {
+            values.add(Integer.parseInt(line));
         }
-        scanner.close();
-        return lineCount;
+        return values;
     }
 
+    private static List<String> readLines(String fileName) {
+        List<String> lines = new ArrayList<>();
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(fileName));
+            String line;
+            while ((line = br.readLine()) != null) {
+                lines.add(line);
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    // Handle the IOException silently
+                }
+            }
+        }
+        return lines;
+    }
+
+    private static int countIncreases(List<Integer> values) {
+        int count = 0;
+        for (int i = 1; i < values.size(); i++) {
+            if (values.get(i) > values.get(i - 1)) count++;
+        }
+        return count;
+    }
+
+    private static int countSlidingWindowIncreases(List<Integer> values, int windowSize) {
+        int count = 0;
+        for (int i = windowSize; i < values.size(); i++) {
+            int firstWindowSum = sum(values, i - windowSize, i - 1);
+            int secondWindowSum = sum(values, i - windowSize + 1, i);
+            if (secondWindowSum > firstWindowSum) count++;
+        }
+        return count;
+    }
+
+    private static int sum(List<Integer> values, int start, int end) {
+        int sum = 0;
+        for (int i = start; i <= end; i++) {
+            sum += values.get(i);
+        }
+        return sum;
+    }
+
+    private static void writeAnswersToFile(String fileName, int... answers) {
+        BufferedWriter writer = null;
+        try {
+            writer = new BufferedWriter(new FileWriter(fileName));
+            for (int i = 0; i < answers.length; i++) {
+                writer.write("Challenge " + (i + 1) + " Answer: " + answers[i]);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    // Handle the IOException silently
+                }
+            }
+        }
+    }
 }
